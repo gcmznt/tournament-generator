@@ -1,0 +1,100 @@
+<!doctype html>
+
+<script>
+function generateMatches(teams) {
+    var matches = [];
+    for (var i = 1; i <= teams; i++) {
+        for (var j = i + 1; j <= teams; j++) {
+            matches.push(`${i}-${j}`);
+        }
+    }
+    return matches;
+}
+
+function generateTeams(n) {
+    return new Array(n).fill(1).map((e, i) => e + i);
+}
+
+function renameTeams(teams, base) {
+    base = base || 10;
+    return teams.map(e => 1 + Math.ceil(Math.log(e) / Math.log(base), 10));
+}
+
+function createSchedule(n) {
+    var odd = (n % 2);
+    if (odd) n++;
+    var schedule = [];
+    var matches = generateMatches(n);
+    while (matches.length) {
+        for (var i = 0, t = [], day = []; t.length < n; i++) {
+            // If this is the last match and the day is not complete
+            // remove the last match and look for a substitute
+            while (i >= matches.length) {
+                i = matches.indexOf(day.pop()) + 1;
+                t = t.slice(0, -2);
+            }
+
+            // Check if both teams have not already played in this day
+            console.log(day, matches.length, i)
+            var m = matches[i].split('-');
+            if (t.indexOf(m[0]) === -1 && t.indexOf(m[1]) === -1) {
+                day.push(matches[i]);
+                t.push(...m);
+            }
+        }
+        for (var i = 0; i < day.length; i++) {
+            matches.splice(matches.indexOf(day[i]), 1);
+        }
+        if (odd) {
+            for (var i = 0; i < day.length; i++) {
+                var m = day[i].split('-');
+                if (parseInt(m[0], 10) === n || parseInt(m[1], 10) === n) {
+                    day.splice(i, 1);
+                }
+            }
+        }
+        schedule.push(day);
+    }
+    return schedule;
+}
+
+function orderMatches(schedule) {
+    for (var i = 1; i < schedule.length; i++) {
+        var prev = schedule[i - 1].join('-').split('-').reverse();
+        schedule[i] = schedule[i].map(
+            e => (e
+                .split('-')
+                .map(e => Math.floor(prev.indexOf(e) / 2))
+                .sort((a, b) => a - b)
+                .map((e, i) => (e === -1 ? 1000 : e) / Math.pow(100, i))
+                .reduce((c, a) => (c + a), 0)
+             + '|' + e)
+        )
+        .sort((a, b) => b.split('|')[0] - a.split('|')[0])
+        .map(e => e.split('|')[1]);
+    }
+    return schedule
+}
+
+function balanceMatches(schedule) {
+    var counter = {};
+    for (var i = 0; i < schedule.length; i++) {
+        for (var j = 0; j < schedule[i].length; j++) {
+            var t = schedule[i][j]
+                .split('-')
+                .sort((a, b) => (counter[a] || 0) - (counter[b] || 0));
+            (counter[t[0]] && counter[t[0]]++) || (counter[t[0]] = 1);
+            schedule[i][j] = t.join('-');
+            // console.log(counter, t)
+        }
+    }
+    return schedule;
+}
+
+function createTournament(n) {
+    return balanceMatches(orderMatches(createSchedule(n)));
+}
+
+debugger;
+createTournament(6);
+</script>
